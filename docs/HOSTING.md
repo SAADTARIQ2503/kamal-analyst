@@ -1,21 +1,23 @@
 # Hosting the Kamal Analyst app
 
-This guide covers running the app on a server inside your network (or on a public server behind HTTPS). It assumes Linux with Python 3.10+, Node 22+, and network access to the Oracle database.
+This guide covers running the app on a server inside your network (or on a public server behind HTTPS). It assumes Python 3.10+, Node 22+, and network access to the Oracle database.
 
 ## 1. What runs where
 
 - **Backend:** FastAPI served by uvicorn. It also serves the built web app from `frontend/dist`, so one process serves both the pages and the API.
-- **Oracle Instant Client:** a local copy in `instantclient/instantclient_23_4`. The backend loads it from there.
+- **Database driver:** `python-oracledb` in its default pure-Python ("thin") mode — `pip install oracledb` is the entire Oracle dependency. No Oracle Instant Client, no native libraries, nothing to download or extract.
 - **Local data:** `backend/data/app.sqlite` holds saved views. Back it up.
 - **Users:** one application login, set in `backend/.env`.
 
 Keep uvicorn on `127.0.0.1` and put a reverse proxy with HTTPS in front of it. The app's own cookies, rate limits, caches, and AI daily limit all live in one process, so run **one** uvicorn worker.
 
+> **Why there's no Instant Client folder anymore:** earlier versions of this app needed the Oracle Instant Client because the database account's password used an old verifier format that `python-oracledb`'s thin mode can't speak. That's a database-side setting, not a client-side one — fixed by resetting the account's password on Oracle 12c+ (which adds a modern SHA-based verifier) and setting `SEC_CASE_SENSITIVE_LOGON = TRUE` at the instance level (which was forcing legacy-only negotiation regardless of the verifiers an account had). Once both were done, thin mode connected with no native client at all. If you ever see `DPY-3015: password verifier type ... is not supported by python-oracledb in thin mode` again — for this account or a new one — it means one of those two settings has reverted; it's a database fix, not something to work around in this codebase.
+
 ## 2. Server prerequisites
 
 ```bash
 sudo apt update
-sudo apt install -y python3 python3-venv nodejs npm libaio1t64   # use libaio1 on older Ubuntu
+sudo apt install -y python3 python3-venv nodejs npm
 ```
 
 Check that the database port is reachable from the server:
@@ -24,12 +26,9 @@ Check that the database port is reachable from the server:
 timeout 5 bash -c 'cat < /dev/null > /dev/tcp/DB_HOST/1521' && echo open || echo blocked
 ```
 
-## 3. Get the code and Oracle Instant Client
+## 3. Get the code
 
-1. Copy the project folder to the server, for example `/opt/kamal-analyst`.
-2. Download Oracle Instant Client **Basic Lite, Linux x64** and extract it so that this folder exists:
-   `/opt/kamal-analyst/instantclient/instantclient_23_4/`
-   The `libaio` package is needed on the host, or you can copy `libaio.so.1` into that folder as we did in development.
+Copy the project folder to the server, for example `/opt/kamal-analyst`.
 
 ## 4. Build the dependencies
 
@@ -83,7 +82,6 @@ Wants=network-online.target
 [Service]
 User=kamal
 WorkingDirectory=/opt/kamal-analyst/backend
-Environment=LD_LIBRARY_PATH=/opt/kamal-analyst/instantclient/instantclient_23_4
 ExecStart=/opt/kamal-analyst/backend/.venv/bin/uvicorn app.main:create_app --factory --host 127.0.0.1 --port 8001 --proxy-headers --forwarded-allow-ips=127.0.0.1
 Restart=on-failure
 
@@ -144,7 +142,7 @@ curl http://127.0.0.1:8001/api/health
 
 | Symptom | Likely cause |
 | --- | --- |
-| `DPI-1047 Cannot locate a 64-bit Oracle Client library` | `LD_LIBRARY_PATH` does not point at the Instant Client folder, or `libaio` is missing. |
+| `DPY-3015: password verifier type ... not supported in thin mode` | The database account's password only has a legacy verifier, or `SEC_CASE_SENSITIVE_LOGON` is `FALSE` on the server. See the note in section 1 — this is fixed on the database, not here. |
 | `ORA-12543` or `ORA-12541` | The database host or port is unreachable from the server. Check firewalls and the `KT_DB_DSN` value. |
 | `ORA-01017` | Wrong database user or password. |
 | Login works but pages are blank | `frontend/dist` is missing. Run `scripts/setup.sh` or `npx vite build` in `frontend/`. |
@@ -155,7 +153,6 @@ curl http://127.0.0.1:8001/api/health
 ## 11. Quick checklist
 
 - [ ] Server reaches the database port.
-- [ ] Instant Client in `instantclient/instantclient_23_4`.
 - [ ] `scripts/setup.sh` finished without errors.
 - [ ] `backend/.env` filled in, permissions 600, database password rotated.
 - [ ] Service running with one worker, `curl /api/health` returns ok.
@@ -165,15 +162,11 @@ curl http://127.0.0.1:8001/api/health
 
 ## 12. Running on Windows
 
-The application code is already cross-platform (the backend uses `pathlib` throughout and has no Linux-specific calls), so nothing in `backend/app` or `frontend/src` needs to change. What's different is the tooling: Linux shell scripts, the Oracle Instant Client build, and how you run it as a background service. PowerShell equivalents of the two scripts are in `scripts/setup.ps1` and `scripts/run.ps1`. I wrote these from the same logic as the bash versions, but could not test them on an actual Windows machine, so verify each step the first time.
+The application has no native dependencies at all now (no Oracle Instant Client, nothing to compile), so this is mostly a matter of command syntax. PowerShell equivalents of the two scripts are in `scripts/setup.ps1` and `scripts/run.ps1`, written from the same logic as the bash versions. I could not test them on an actual Windows machine, so verify each step the first time.
 
 ### Prerequisites
 
 - **Python 3.10+ (64-bit)** and **Node 22+**, both on `PATH`. Check with `python --version` and `node --version` in PowerShell.
-- **Microsoft Visual C++ Redistributable 2017 or later (x64)**. Oracle's Windows Instant Client needs it; without it you'll see a missing-DLL error, not an Oracle-specific one.
-- An **Oracle Instant Client Basic Lite, Windows x64** zip, not the Linux one. Extract it so this folder exists:
-  `instantclient\instantclient_23_4\`
-  Unlike Linux, Windows does not need a separate `libaio` package — that requirement was Linux-only.
 
 ### Setup and run
 
@@ -189,8 +182,6 @@ Fill in `backend\.env` as described in section 5 above (the `python3` commands t
 .\scripts\run.ps1          # listens on 127.0.0.1:8001; set $env:PORT first to change it
 curl http://127.0.0.1:8001/api/health
 ```
-
-Note what's *not* needed on Windows: `run.ps1` does not set anything equivalent to `LD_LIBRARY_PATH`. On Linux that variable is required because `dlopen` won't resolve the Instant Client's internal library dependencies from the directory you pass in. On Windows, `oracledb.init_oracle_client(lib_dir=...)` — already in `db.py`, no code change needed — registers that directory for DLL search on your behalf. If you still see `DPI-1047`, double check the Instant Client is the Windows build and matches your Python's bitness (64-bit with 64-bit).
 
 ### Running it as a background service
 
@@ -226,6 +217,4 @@ Caddy ships an official Windows binary and uses the exact same Caddyfile shown i
 | Symptom | Likely cause |
 | --- | --- |
 | `The term 'uvicorn' is not recognized` | You're calling `uvicorn` directly instead of `.venv\Scripts\uvicorn.exe`, or setup didn't finish. |
-| A `VCRUNTIME140.dll` or similar missing-DLL error on startup | Install the Visual C++ Redistributable x64. |
-| `DPI-1047` even though the Instant Client folder exists | You extracted the Linux zip, or a 32-bit Instant Client with 64-bit Python (or vice versa). |
 | Scripts refuse to run ("running scripts is disabled") | PowerShell's default execution policy. Use the `Set-ExecutionPolicy -Scope Process` line above, or `Unblock-File` on the `.ps1` files. |

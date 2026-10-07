@@ -14,8 +14,6 @@ class Settings(BaseSettings):
     db_user: str
     db_password: SecretStr
     db_dsn: str
-    instant_client_dir: Path = PROJECT_DIR / "instantclient" / "instantclient_23_4"
-
     db_pool_min: int = 1
     db_pool_max: int = 4
     db_query_timeout_ms: int = 30_000

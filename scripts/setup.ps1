@@ -2,13 +2,6 @@
 $ErrorActionPreference = "Stop"
 
 $Root = Split-Path -Parent $PSScriptRoot
-$IcDir = Join-Path $Root "instantclient\instantclient_23_4"
-
-if (-not (Test-Path $IcDir)) {
-    Write-Host "Oracle Instant Client not found at $IcDir"
-    Write-Host "Download the Basic Lite WINDOWS x64 zip from Oracle (not the Linux one) and extract it into instantclient\."
-    exit 1
-}
 
 python -m venv (Join-Path $Root "backend\.venv")
 $Py = Join-Path $Root "backend\.venv\Scripts\python.exe"

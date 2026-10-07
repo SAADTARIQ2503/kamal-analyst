@@ -9,12 +9,11 @@ from app.main import create_app
 
 
 @pytest.fixture
-def settings(tmp_path):
+def settings():
     return Settings(
         db_user="u",
         db_password=SecretStr("p"),
         db_dsn="x/y",
-        instant_client_dir=tmp_path,
         app_username="analyst",
         app_password_hash=SecretStr(PasswordHasher().hash("correct-horse")),
         session_secret=SecretStr("t" * 48),

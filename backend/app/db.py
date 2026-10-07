@@ -12,7 +12,6 @@ def init_pool(settings: Settings) -> None:
     global _pool
     if _pool is not None:
         return
-    oracledb.init_oracle_client(lib_dir=str(settings.instant_client_dir))
     _pool = oracledb.create_pool(
         user=settings.db_user,
         password=settings.db_password.get_secret_value(),
