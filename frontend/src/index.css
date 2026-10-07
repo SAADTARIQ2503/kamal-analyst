@@ -1,0 +1,154 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+  --background: #f3f8f6;
+  --foreground: #14201b;
+  --card: #ffffff;
+  --card-foreground: #14201b;
+  --muted: #e6f0ec;
+  --muted-foreground: #4b5f57;
+  --border: #cfe0d8;
+  --input: #b7cbc2;
+  --primary: #0a7a78;
+  --primary-foreground: #ffffff;
+  --accent: #d2f2ec;
+  --accent-foreground: #075a58;
+  --header: #0b5858;
+  --header-foreground: #f1faf7;
+  --destructive: #b42323;
+  --ring: #0b6e6e;
+  --positive: #137a3f;
+  --positive-soft: #dcf3e5;
+  --negative: #b42323;
+  --negative-soft: #fbe4e1;
+  --warning: #92570a;
+  --warning-soft: #fcefd3;
+  --info: #1d5fa8;
+  --info-soft: #e0ecfb;
+  --chart-1: #0a7a78;
+  --chart-2: #e8892b;
+  --chart-3: #4f63d2;
+  --chart-4: #c8377f;
+  --chart-5: #4f9a2e;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --background: #0d1716;
+    --foreground: #e6f2ee;
+    --card: #132220;
+    --card-foreground: #e6f2ee;
+    --muted: #1a2e2b;
+    --muted-foreground: #a3bfb7;
+    --border: #2a443e;
+    --input: #3a5852;
+    --primary: #4fd6c8;
+    --primary-foreground: #06201d;
+    --accent: #123b38;
+    --accent-foreground: #b4f2ea;
+    --header: #0e4d4d;
+    --header-foreground: #e6f2ee;
+    --destructive: #ff8a80;
+    --ring: #4fd6c8;
+    --positive: #6fd79a;
+    --positive-soft: #15301f;
+    --negative: #ff8a80;
+    --negative-soft: #3a1c1b;
+    --warning: #f2c46b;
+    --warning-soft: #35290f;
+    --info: #8db9ff;
+    --info-soft: #172a44;
+    --chart-1: #4fd6c8;
+    --chart-2: #ffb454;
+    --chart-3: #8aa4ff;
+    --chart-4: #ff7eb6;
+    --chart-5: #a6e22e;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #0d1716;
+  --foreground: #e6f2ee;
+  --card: #132220;
+  --card-foreground: #e6f2ee;
+  --muted: #1a2e2b;
+  --muted-foreground: #a3bfb7;
+  --border: #2a443e;
+  --input: #3a5852;
+  --primary: #4fd6c8;
+  --primary-foreground: #06201d;
+  --accent: #123b38;
+  --accent-foreground: #b4f2ea;
+  --header: #0e4d4d;
+  --header-foreground: #e6f2ee;
+  --destructive: #ff8a80;
+  --ring: #4fd6c8;
+  --positive: #6fd79a;
+  --positive-soft: #15301f;
+  --negative: #ff8a80;
+  --negative-soft: #3a1c1b;
+  --warning: #f2c46b;
+  --warning-soft: #35290f;
+  --info: #8db9ff;
+  --info-soft: #172a44;
+  --chart-1: #4fd6c8;
+  --chart-2: #ffb454;
+  --chart-3: #8aa4ff;
+  --chart-4: #ff7eb6;
+  --chart-5: #a6e22e;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-header: var(--header);
+  --color-header-foreground: var(--header-foreground);
+  --color-destructive: var(--destructive);
+  --color-ring: var(--ring);
+  --color-positive: var(--positive);
+  --color-positive-soft: var(--positive-soft);
+  --color-negative: var(--negative);
+  --color-negative-soft: var(--negative-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

@@ -1,0 +1,11 @@
+.env
+backend/.env
+backend/.venv/
+frontend/node_modules/
+frontend/dist/
+instantclient/
+__pycache__/
+.pytest_cache/
+info.txt
+tnsnames.ora
+backend/data/
