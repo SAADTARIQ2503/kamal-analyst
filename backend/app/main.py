@@ -161,7 +161,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.exception_handler(oracledb.DatabaseError)
     async def database_error(_: Request, exc: oracledb.DatabaseError):
-        log.error("database_error", code=exc.args[0].code if exc.args else None)
+        info = exc.args[0] if exc.args else None
+        log.error("database_error", code=getattr(info, "code", None), message=getattr(info, "message", str(exc)))
         return JSONResponse(status_code=502, content={"detail": "The database did not return data. Try again."})
 
     @app.get("/api/health", response_model=HealthResponse)
