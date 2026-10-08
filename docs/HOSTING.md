@@ -140,15 +140,15 @@ curl http://127.0.0.1:8001/api/health
 
 ## 10. Troubleshooting
 
-| Symptom | Likely cause |
-| --- | --- |
+| Symptom                                                           | Likely cause                                                                                                                                                                             |
+| ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `DPY-3015: password verifier type ... not supported in thin mode` | The database account's password only has a legacy verifier, or `SEC_CASE_SENSITIVE_LOGON` is `FALSE` on the server. See the note in section 1 — this is fixed on the database, not here. |
-| `ORA-12543` or `ORA-12541` | The database host or port is unreachable from the server. Check firewalls and the `KT_DB_DSN` value. |
-| `ORA-01017` | Wrong database user or password. |
-| Login works but pages are blank | `frontend/dist` is missing. Run `scripts/setup.sh` or `npx vite build` in `frontend/`. |
-| Summaries say "not available right now" | `KT_ANTHROPIC_API_KEY` is empty or invalid. |
-| Login cookie missing over HTTP | `KT_SESSION_HTTPS_ONLY=true` requires HTTPS. Use the proxy, or set it to `false` on an HTTP-only test server. |
-| `401` on every page after restart | The session secret changed. Users must sign in again. |
+| `ORA-12543` or `ORA-12541`                                        | The database host or port is unreachable from the server. Check firewalls and the `KT_DB_DSN` value.                                                                                     |
+| `ORA-01017`                                                       | Wrong database user or password.                                                                                                                                                         |
+| Login works but pages are blank                                   | `frontend/dist` is missing. Run `scripts/setup.sh` or `npx vite build` in `frontend/`.                                                                                                   |
+| Summaries say "not available right now"                           | `KT_ANTHROPIC_API_KEY` is empty or invalid.                                                                                                                                              |
+| Login cookie missing over HTTP                                    | `KT_SESSION_HTTPS_ONLY=true` requires HTTPS. Use the proxy, or set it to `false` on an HTTP-only test server.                                                                            |
+| `401` on every page after restart                                 | The session secret changed. Users must sign in again.                                                                                                                                    |
 
 ## 11. Quick checklist
 
@@ -202,19 +202,33 @@ Caddy ships an official Windows binary and uses the exact same Caddyfile shown i
 
 ### Command translations used throughout this guide
 
-| Linux (bash) | Windows (PowerShell) |
-| --- | --- |
-| `python3` | `python` |
-| `backend/.venv/bin/python` | `backend\.venv\Scripts\python.exe` |
-| `export VAR=value` | `$env:VAR = "value"` |
-| `chmod 600 backend/.env` | `icacls backend\.env /inheritance:r /grant:r "$env:USERNAME:F"` |
-| `mkdir -p path` | `New-Item -ItemType Directory -Force -Path path` |
-| `timeout 5 bash -c 'cat < /dev/null > /dev/tcp/HOST/1521'` | `Test-NetConnection -ComputerName HOST -Port 1521` |
-| `systemctl` service | NSSM service (see above) |
+| Linux (bash)                                               | Windows (PowerShell)                                            |
+| ---------------------------------------------------------- | --------------------------------------------------------------- |
+| `python3`                                                  | `python`                                                        |
+| `backend/.venv/bin/python`                                 | `backend\.venv\Scripts\python.exe`                              |
+| `export VAR=value`                                         | `$env:VAR = "value"`                                            |
+| `chmod 600 backend/.env`                                   | `icacls backend\.env /inheritance:r /grant:r "$env:USERNAME:F"` |
+| `mkdir -p path`                                            | `New-Item -ItemType Directory -Force -Path path`                |
+| `timeout 5 bash -c 'cat < /dev/null > /dev/tcp/HOST/1521'` | `Test-NetConnection -ComputerName HOST -Port 1521`              |
+| `systemctl` service                                        | NSSM service (see above)                                        |
 
 ### Windows-specific troubleshooting
 
-| Symptom | Likely cause |
-| --- | --- |
-| `The term 'uvicorn' is not recognized` | You're calling `uvicorn` directly instead of `.venv\Scripts\uvicorn.exe`, or setup didn't finish. |
+| Symptom                                               | Likely cause                                                                                                                           |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `The term 'uvicorn' is not recognized`                | You're calling `uvicorn` directly instead of `.venv\Scripts\uvicorn.exe`, or setup didn't finish.                                      |
 | Scripts refuse to run ("running scripts is disabled") | PowerShell's default execution policy. Use the `Set-ExecutionPolicy -Scope Process` line above, or `Unblock-File` on the `.ps1` files. |
+
+## 13. Hosting on Render (free tier, for a demo)
+
+The repo root has a `Dockerfile` that builds the frontend and backend into one image, and a `render.yaml` that describes the service. This gives you one continuously-running container — unlike Vercel's serverless functions, this fits how the app is built (one process, one Oracle connection pool, one in-memory cache/rate-limiter).
+
+1. Push the repo to GitHub (already done for this project).
+2. In the Render dashboard: **New → Blueprint**, point it at the repo. Render reads `render.yaml` and creates the web service on the free plan automatically.
+3. Fill in the environment variables Render leaves blank (`sync: false` in `render.yaml` means "set this yourself, don't commit it"): `KT_DB_USER`, `KT_DB_PASSWORD`, `KT_DB_DSN`, `KT_APP_USERNAME`, `KT_APP_PASSWORD_HASH`, `KT_SESSION_SECRET`, `KT_ANTHROPIC_API_KEY` (optional). Generate the hash and secret the same way as section 5.
+4. Deploy. Render builds the Docker image and runs `uvicorn` with `$PORT` set by Render itself — nothing else to configure.
+5. Render's free web services sleep after ~15 minutes idle and cold-start (a few seconds) on the next request — expected on the free tier, fine for a demo.
+6. The container's filesystem is ephemeral: `backend/data/app.sqlite` (saved views) resets on every redeploy or restart. There's no persistent disk on the free plan.
+7. `KT_DB_DSN` must be reachable from Render's servers, not just your LAN — the database side of this is on you, as discussed.
+
+Without Blueprint: create the Web Service manually, set **Environment: Docker**, Dockerfile path `./Dockerfile`, and add the same environment variables by hand.
